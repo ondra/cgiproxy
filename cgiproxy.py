@@ -75,12 +75,6 @@ def main():
     outbuf += b"Content-Length: %d\r\n" % (len(body),)
 
     outbuf += b'\r\n'  # end of headers
-    outbuf += f"path_info {path_info}\r\n".encode('latin-1')
-    outbuf += f"query_string {query_string}\r\n".encode('latin-1')
-    outbuf += f"path {o.path}\r\n".encode('latin-1')
-    outbuf += f"content_length {content_length}\r\n".encode('latin-1')
-    outbuf += f"content_type {content_type}\r\n".encode('latin-1')
-    outbuf += f"target_path {target_path}\r\n".encode('latin-1')
     outbuf += body
 
     sys.stdout.buffer.write(outbuf)
