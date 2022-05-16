@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+TARGET = "//127.0.0.1/~ondra"
 
 import os
 import sys
@@ -8,10 +9,7 @@ import http.client
 import urllib.parse
 import urllib.request
 
-TARGET = "http://127.0.0.1/~ondra/test"
-TARGET = "//127.0.0.1/~ondra/"
-
-def main():
+def main(target):
     method = os.environ.get("REQUEST_METHOD") or "GET"
     content_type = os.environ.get("CONTENT_TYPE")
     content_length = os.environ.get("CONTENT_LENGTH")
@@ -62,6 +60,7 @@ def main():
     outbuf = b""
     outbuf += (b"Status: %d %s\r\n"
             % (resp.status, resp.reason.encode("latin-1"))) 
+    outbuf += b"Connection: close\r\n"
 
     for header in resp.headers:
         if header.lower() in ("transfer-encoding", "content-length"):
@@ -79,19 +78,31 @@ def main():
 
     sys.stdout.buffer.write(outbuf)
 
+
 if __name__ == "__main__":
     try:
-        main()
+        target = TARGET
+    except NameError:
+        if len(sys.argv) != 2:
+            print("usage: {} TARGET_URL", sys.argv[0], file=sys.stderr)
+            exit(1)
+        else:
+            target = sys.argv[1]
+    try:
+        main(target)
     except Exception as e:
         verbose = True
-        import traceback
-        sys.stdout.buffer.write(b'status: 500 proxy internal error\r\n')
-        sys.stdout.buffer.write(b'content-type: text/html\r\n')
-        sys.stdout.buffer.write(b'\r\n')
+        outbuf = b""
+        outbuf += b'Status: 500 proxy internal error\r\n'
+        outbuf += b'Content-Type: text/html\r\n'
         if verbose:
-            sys.stdout.buffer.write(traceback.format_exc().encode('utf-8'))
+            import traceback
+            body = traceback.format_exc().encode('utf-8')
         else:
-            sys.stdout.buffer.write(str(e).encode('utf-8'))
-        sys.stdout.buffer.write(b'\r\n')
-
+            body = str(e).encode('utf-8')
+        outbuf += b'Content-Length: %d\r\n' % (len(body),)
+        outbuf += b'\r\n'
+        outbuf += body
+        sys.stdout.buffer.write(outbuf)
+        exit(1)
 
